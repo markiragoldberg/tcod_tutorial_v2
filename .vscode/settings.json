@@ -15,6 +15,10 @@
         "--max-line-length=88",
         "--extend-ignore=E203"
     ],
+    "python.formatting.blackArgs": [
+        "--line-length",
+        "88"
+    ],
     "editor.formatOnSave": true,
     "python.formatting.provider": "black",
     "editor.codeActionsOnSave": {
