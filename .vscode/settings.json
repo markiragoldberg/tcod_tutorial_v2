@@ -8,6 +8,9 @@
         "--follow-imports=silent",
         "--show-column-numbers"
     ],
+    "python.linting.pylintArgs": [
+        "--load-plugins"
+    ],
     "editor.formatOnSave": true,
     "python.formatting.provider": "black",
     "editor.codeActionsOnSave": {
