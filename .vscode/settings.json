@@ -11,6 +11,10 @@
     "python.linting.pylintArgs": [
         "--load-plugins"
     ],
+    "python.linting.flake8Args": [
+        "--max-line-length=88",
+        "--extend-ignore=E203"
+    ],
     "editor.formatOnSave": true,
     "python.formatting.provider": "black",
     "editor.codeActionsOnSave": {
