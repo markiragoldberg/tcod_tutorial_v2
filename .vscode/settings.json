@@ -21,7 +21,7 @@
         "source.organizeImports": true // Runs isort.
     },
     "editor.rulers": [
-        120
+        88
     ],
     "files.associations": {
         "*.spec": "python"
