@@ -9,6 +9,7 @@
 
 def lerp_01(y1: float, y2: float, n: float) -> float:
     """A linear interpolation that assumes x1 is 0 and x2 is 1.
+        n will be limited to the range 0-1 if it is outside it.
         For more information, read lerp_xy's docstring.
 
     Args:
@@ -37,8 +38,12 @@ def clamp_01(n: float) -> float:
 
 def lerp_xy(x1: float, x2: float, y1: float, y2: float, n: float) -> float:
     """Given a line (x1, y1) to (x2, y2),
-       finds the point (n, y3) on that line,
-       and returns y3.
+        finds the point (n, y3) on that line,
+        and returns y3.
+
+        If n is outside the range x1-x2 it will be clamped
+        to that range, and the return value y3 will be clamped
+        to the range y1-y2 as a result.
 
     Args:
         x1 (float): the input value for the first reference point.
@@ -51,4 +56,4 @@ def lerp_xy(x1: float, x2: float, y1: float, y2: float, n: float) -> float:
         float: the output value for your input value n.
     """
     percentage = (n - x1) / (x2 - x1)
-    return y1 + (y2 - y1) * percentage
+    return lerp_01(y1, y2, percentage)
