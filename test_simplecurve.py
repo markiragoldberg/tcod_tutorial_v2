@@ -1,5 +1,6 @@
 import pytest
 
+from point2d import Point2d
 from simplecurve import SimpleCurve
 
 
@@ -13,19 +14,18 @@ def test_simplecurve_bad() -> None:
 
 def test_simplecurve_good() -> None:
     curve = SimpleCurve()
-
-    curve.add_point((0, 0))
+    curve.add_point(Point2d(0, 0))
     assert curve(-1) == 0
     assert curve(0) == 0
     assert curve(1) == 0
 
-    curve.add_point((10, 100))
+    curve.add_point(Point2d(10, 100))
 
-    curve.add_point((5, 10))
-    curve.add_point((100, 20))
-    assert curve._points[1] == (5, 10)
-    assert curve._points[2] == (10, 100)
-    assert curve._points[3] == (100, 20)
+    curve.add_point(Point2d(5, 10))
+    curve.add_point(Point2d(100, 20))
+    assert curve._points[1] == Point2d(5, 10)
+    assert curve._points[2] == Point2d(10, 100)
+    assert curve._points[3] == Point2d(100, 20)
 
     assert curve(-9999) == 0
     assert curve(0) == 0
