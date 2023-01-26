@@ -1,6 +1,7 @@
 from attrs import Factory, define
 
 from lerp import lerp_xy
+from point2d import Point2d
 
 
 @define
@@ -14,17 +15,16 @@ class SimpleCurve:
         a curve with no points defined.
     """
 
-    _points: list[tuple[float, float]] = Factory(list)
+    _points: list[Point2d] = Factory(list)
 
-    def add_point(self, point: tuple[float, float]) -> None:
+    def add_point(self, point: Point2d) -> None:
         """Add a point to the SimpleCurve.
 
         Args:
-            point (tuple[float, float]): The new point on the curve,
-            as a tuple of the form (input x, output y).
+            point (Point2d): The new point on the curve.
         """
         self._points.append(point)
-        self._points.sort(key=lambda pt: pt[0])
+        self._points.sort(key=lambda pt: pt.x)
 
     def __call__(self, n: float) -> float:
         """Find point (n, y) on the curve and returns y.
@@ -45,19 +45,19 @@ class SimpleCurve:
             raise Exception("Attempted to evaluate a simple curve with no points")
         # if curve has only one point return that point's y
         if len(self._points) == 1:
-            return self._points[0][1]
+            return self._points[0].y
         # if input is out of bounds, return the nearest bound's y
-        if n < self._points[0][0]:
-            return self._points[0][1]
-        if n > self._points[-1][0]:
-            return self._points[-1][1]
+        if n < self._points[0].x:
+            return self._points[0].y
+        if n > self._points[-1].x:
+            return self._points[-1].y
 
         # find bounding points
         i = 1
-        while n > self._points[i][0]:
+        while n > self._points[i].x:
             i += 1
 
         # obtain the output using lerp
         pt1 = self._points[i - 1]
         pt2 = self._points[i]
-        return lerp_xy(pt1[0], pt2[0], pt1[1], pt2[1], n)
+        return lerp_xy(pt1.x, pt2.x, pt1.y, pt2.y, n)
