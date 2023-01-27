@@ -6,6 +6,8 @@ import random
 import tcod
 
 from game_map import GameMap
+from point2d import Point2d
+from simplecurve import SimpleCurve
 import entity_factories
 import tile_types
 
@@ -13,70 +15,85 @@ if TYPE_CHECKING:
     from engine import Engine
     from entity import Entity
 
+max_items_by_floor = SimpleCurve()
+max_items_by_floor.add_point(Point2d(1, 1))
+max_items_by_floor.add_point(Point2d(4, 2))
 
-max_items_by_floor = [
-    (1, 1),
-    (4, 2),
-]
+max_monsters_by_floor = SimpleCurve()
+max_monsters_by_floor.add_point(Point2d(1, 2))
+max_monsters_by_floor.add_point(Point2d(4, 3))
+max_monsters_by_floor.add_point(Point2d(6, 5))
 
-max_monsters_by_floor = [
-    (1, 2),
-    (4, 3),
-    (6, 5),
-]
+health_potion_by_floor = SimpleCurve()
+health_potion_by_floor.add_point(Point2d(0, 35))
 
-item_chances: Dict[int, List[Tuple[Entity, int]]] = {
-    0: [(entity_factories.health_potion, 35)],
-    2: [(entity_factories.confusion_scroll, 10)],
-    4: [(entity_factories.lightning_scroll, 25), (entity_factories.sword, 5)],
-    6: [(entity_factories.fireball_scroll, 25), (entity_factories.chain_mail, 15)],
+confusion_scroll_by_floor = SimpleCurve()
+confusion_scroll_by_floor.add_point(Point2d(1, 0))
+confusion_scroll_by_floor.add_point(Point2d(2, 10))
+
+lightning_scroll_by_floor = SimpleCurve()
+lightning_scroll_by_floor.add_point(Point2d(3, 0))
+lightning_scroll_by_floor.add_point(Point2d(4, 25))
+
+sword_by_floor = SimpleCurve()
+sword_by_floor.add_point(Point2d(3, 0))
+sword_by_floor.add_point(Point2d(4, 5))
+
+sword_by_floor = SimpleCurve()
+sword_by_floor.add_point(Point2d(3, 0))
+sword_by_floor.add_point(Point2d(4, 5))
+
+fireball_scroll_by_floor = SimpleCurve()
+fireball_scroll_by_floor.add_point(Point2d(5, 0))
+fireball_scroll_by_floor.add_point(Point2d(6, 25))
+
+chain_mail_by_floor = SimpleCurve()
+chain_mail_by_floor.add_point(Point2d(5, 0))
+chain_mail_by_floor.add_point(Point2d(6, 15))
+
+item_curves_by_floor: Dict[Entity, SimpleCurve] = {
+    entity_factories.health_potion: health_potion_by_floor,
+    entity_factories.confusion_scroll: confusion_scroll_by_floor,
+    entity_factories.lightning_scroll: lightning_scroll_by_floor,
+    entity_factories.sword: sword_by_floor,
+    entity_factories.fireball_scroll: fireball_scroll_by_floor,
+    entity_factories.chain_mail: chain_mail_by_floor,
 }
 
-enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {
-    0: [(entity_factories.orc, 80)],
-    3: [(entity_factories.troll, 15)],
-    5: [(entity_factories.troll, 30)],
-    7: [(entity_factories.troll, 60)],
+orc_curve: SimpleCurve = SimpleCurve()
+orc_curve.add_point(Point2d(1, 80))
+
+troll_curve: SimpleCurve = SimpleCurve()
+troll_curve.add_point(Point2d(2, 0))
+troll_curve.add_point(Point2d(3, 15))
+troll_curve.add_point(Point2d(5, 30))
+troll_curve.add_point(Point2d(7, 60))
+
+enemy_chances: Dict[Entity, SimpleCurve] = {
+    entity_factories.orc: orc_curve,
+    entity_factories.troll: troll_curve,
 }
 
 
-def get_max_value_for_floor(
-    max_value_by_floor: List[Tuple[int, int]], floor: int
-) -> int:
-    current_value = 0
-
-    for floor_minimum, value in max_value_by_floor:
-        if floor_minimum > floor:
-            break
-        else:
-            current_value = value
-
-    return current_value
+def get_max_value_for_floor(max_value_curve: SimpleCurve, floor: int) -> int:
+    return int(max_value_curve(floor))
 
 
 def get_entities_at_random(
-    weighted_chances_by_floor: Dict[int, List[Tuple[Entity, int]]],
-    number_of_entities: int,
-    floor: int,
+    entity_weight_curves: Dict[Entity, SimpleCurve], number_of_entities: int, floor: int
 ) -> List[Entity]:
-    entity_weighted_chances = {}
+    entities = []
+    chances = []
 
-    for key, values in weighted_chances_by_floor.items():
-        if key > floor:
-            break
-        else:
-            for value in values:
-                entity = value[0]
-                weighted_chance = value[1]
+    for entity, curve in entity_weight_curves.items():
+        chance = curve(floor)
+        if chance > 0:
+            entities.append(entity)
+            chances.append(chance)
 
-                entity_weighted_chances[entity] = weighted_chance
+    chosen_entities = []
 
-    entities = list(entity_weighted_chances.keys())
-    entity_weighted_chance_values = list(entity_weighted_chances.values())
-
-    chosen_entities = random.choices(
-        entities, weights=entity_weighted_chance_values, k=number_of_entities
-    )
+    chosen_entities = random.choices(entities, weights=chances, k=number_of_entities)
 
     return chosen_entities
 
@@ -122,7 +139,7 @@ def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int) -
         enemy_chances, number_of_monsters, floor_number
     )
     items: List[Entity] = get_entities_at_random(
-        item_chances, number_of_items, floor_number
+        item_curves_by_floor, number_of_items, floor_number
     )
 
     for entity in monsters + items:
