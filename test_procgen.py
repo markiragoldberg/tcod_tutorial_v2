@@ -1,7 +1,8 @@
 from typing import Dict
 
 from entity import Entity
-from procgen import enemy_chances, get_entities_at_random
+from entity_curves import enemy_chances
+from procgen import get_entities_at_random
 import entity_factories
 
 
