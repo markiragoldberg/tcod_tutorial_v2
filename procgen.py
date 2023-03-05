@@ -115,6 +115,25 @@ def tunnel_between(
         yield x, y
 
 
+def generate_arena(
+    map_width: int,
+    map_height: int,
+    engine: Engine,
+) -> GameMap:
+    player = engine.player
+    dungeon = GameMap(engine, map_width, map_height, entities=[player])
+
+    room = RectangularRoom(0, 0, map_width - 1, map_height - 1)
+    dungeon.tiles[room.inner] = tile_types.floor
+
+    player.place(*room.center, dungeon)
+
+    dungeon.tiles[1, 1] = tile_types.down_stairs
+    dungeon.downstairs_location = (1, 1)
+
+    return dungeon
+
+
 def generate_dungeon(
     max_rooms: int,
     room_min_size: int,
