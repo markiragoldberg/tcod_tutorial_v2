@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Iterator, Optional
+from typing import TYPE_CHECKING
 
 from tcod.console import Console
 import numpy as np
 
+from components.ai import HostileEnemy
 from entity import Actor, Item
 import tile_types
 
 if TYPE_CHECKING:
+    from typing import Iterable, Iterator, List, Optional, Union
+
     from engine import Engine
     from entity import Entity
 
@@ -74,7 +77,7 @@ class GameMap:
         """Return True if x and y are inside of the bounds of this map."""
         return 0 <= x < self.width and 0 <= y < self.height
 
-    def render(self, console: Console) -> None:
+    def render(self, console: Console, target: Union[Entity, None]) -> None:
         """
         Renders the map.
 
@@ -93,10 +96,25 @@ class GameMap:
         )
 
         for entity in entities_sorted_for_rendering:
+            bg = None
+            if entity is target:
+                bg = (64, 0, 0)
             if self.visible[entity.x, entity.y]:
                 console.print(
-                    x=entity.x, y=entity.y, string=entity.char, fg=entity.color
+                    x=entity.x, y=entity.y, string=entity.char, fg=entity.color, bg=bg
                 )
+
+    def get_visible_targets(self, player: Actor) -> List[Actor]:
+        visibles = [
+            e
+            for e in self.entities
+            if self.visible[e.x, e.y]
+            and isinstance(e, Actor)
+            and isinstance(e.ai, HostileEnemy)
+            and e is not player
+        ]
+        visibles.sort(key=lambda e: e.distance(player.x, player.y))
+        return visibles
 
 
 class GameWorld:

@@ -141,6 +141,7 @@ class EventHandler(BaseEventHandler):
             self.engine.message_log.add_message(exc.args[0], color.impossible)
             return False  # Skip enemy turn on exceptions.
 
+        # TODO autoattack here
         self.engine.handle_enemy_turns()
 
         self.engine.update_fov()
@@ -173,7 +174,9 @@ class AskUserEventHandler(EventHandler):
             return None
         return self.on_exit()
 
-    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[ActionOrHandler]:
+    def ev_mousebuttondown(
+        self, event: tcod.event.MouseButtonDown
+    ) -> Optional[ActionOrHandler]:
         """By default any mouse click exits this input handler."""
         return self.on_exit()
 
@@ -211,16 +214,24 @@ class CharacterScreenEventHandler(AskUserEventHandler):
             bg=(0, 0, 0),
         )
 
-        console.print(x=x + 1, y=y + 1, string=f"Level: {self.engine.player.level.current_level}")
-        console.print(x=x + 1, y=y + 2, string=f"XP: {self.engine.player.level.current_xp}")
+        console.print(
+            x=x + 1, y=y + 1, string=f"Level: {self.engine.player.level.current_level}"
+        )
+        console.print(
+            x=x + 1, y=y + 2, string=f"XP: {self.engine.player.level.current_xp}"
+        )
         console.print(
             x=x + 1,
             y=y + 3,
             string=f"XP for next Level: {self.engine.player.level.experience_to_next_level}",
         )
 
-        console.print(x=x + 1, y=y + 4, string=f"Attack: {self.engine.player.fighter.power}")
-        console.print(x=x + 1, y=y + 5, string=f"Defense: {self.engine.player.fighter.defense}")
+        console.print(
+            x=x + 1, y=y + 4, string=f"Attack: {self.engine.player.fighter.power}"
+        )
+        console.print(
+            x=x + 1, y=y + 5, string=f"Defense: {self.engine.player.fighter.defense}"
+        )
 
 
 class LevelUpEventHandler(AskUserEventHandler):
@@ -283,7 +294,9 @@ class LevelUpEventHandler(AskUserEventHandler):
 
         return super().ev_keydown(event)
 
-    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[ActionOrHandler]:
+    def ev_mousebuttondown(
+        self, event: tcod.event.MouseButtonDown
+    ) -> Optional[ActionOrHandler]:
         """
         Don't allow the player to click to exit the menu, like normal.
         """
@@ -431,7 +444,9 @@ class SelectIndexHandler(AskUserEventHandler):
             return self.on_index_selected(*self.engine.mouse_location)
         return super().ev_keydown(event)
 
-    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[ActionOrHandler]:
+    def ev_mousebuttondown(
+        self, event: tcod.event.MouseButtonDown
+    ) -> Optional[ActionOrHandler]:
         """Left click confirms a selection."""
         if self.engine.game_map.in_bounds(*event.tile):
             if event.button == 1:
@@ -454,7 +469,9 @@ class LookHandler(SelectIndexHandler):
 class SingleRangedAttackHandler(SelectIndexHandler):
     """Handles targeting a single enemy. Only the enemy selected will be affected."""
 
-    def __init__(self, engine: Engine, callback: Callable[[Tuple[int, int]], Optional[Action]]):
+    def __init__(
+        self, engine: Engine, callback: Callable[[Tuple[int, int]], Optional[Action]]
+    ):
         super().__init__(engine)
 
         self.callback = callback
@@ -487,8 +504,8 @@ class AreaRangedAttackHandler(SelectIndexHandler):
         console.draw_frame(
             x=x - self.radius - 1,
             y=y - self.radius - 1,
-            width=self.radius ** 2,
-            height=self.radius ** 2,
+            width=self.radius**2,
+            height=self.radius**2,
             fg=color.red,
             clear=False,
         )
@@ -506,7 +523,9 @@ class MainGameEventHandler(EventHandler):
 
         player = self.engine.player
 
-        if key == tcod.event.K_PERIOD and modifier & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
+        if key == tcod.event.K_PERIOD and modifier & (
+            tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT
+        ):
             return actions.TakeStairsAction(player)
 
         if key in MOVE_KEYS:
@@ -519,6 +538,11 @@ class MainGameEventHandler(EventHandler):
             raise SystemExit()
         elif key == tcod.event.K_v:
             return HistoryViewer(self.engine)
+        elif key in {tcod.event.K_TAB, tcod.event.K_KP_TAB}:
+            if modifier & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
+                self.engine.previousTarget()
+            else:
+                self.engine.nextTarget()
 
         elif key == tcod.event.K_g:
             action = PickupAction(player)
@@ -574,7 +598,9 @@ class HistoryViewer(EventHandler):
 
         # Draw a frame with a custom banner title.
         log_console.draw_frame(0, 0, log_console.width, log_console.height)
-        log_console.print_box(0, 0, log_console.width, 1, "┤Message history├", alignment=tcod.CENTER)
+        log_console.print_box(
+            0, 0, log_console.width, 1, "┤Message history├", alignment=tcod.CENTER
+        )
 
         # Render the message log using the cursor parameter.
         self.engine.message_log.render_messages(
