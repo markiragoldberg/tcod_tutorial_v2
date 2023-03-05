@@ -38,7 +38,7 @@ class Engine:
         self.game_map.visible[:] = compute_fov(
             self.game_map.tiles["transparent"],
             (self.player.x, self.player.y),
-            radius=8,
+            radius=99,
         )
         # If a tile is "visible" it should be added to "explored".
         self.game_map.explored |= self.game_map.visible
@@ -61,7 +61,9 @@ class Engine:
             location=(0, 47),
         )
 
-        render_functions.render_names_at_mouse_location(console=console, x=21, y=44, engine=self)
+        render_functions.render_names_at_mouse_location(
+            console=console, x=21, y=44, engine=self
+        )
 
     def save_as(self, filename: str) -> None:
         """Save this Engine instance as a compressed file."""
