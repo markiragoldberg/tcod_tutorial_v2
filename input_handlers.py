@@ -141,8 +141,14 @@ class EventHandler(BaseEventHandler):
             self.engine.message_log.add_message(exc.args[0], color.impossible)
             return False  # Skip enemy turn on exceptions.
 
-        # TODO autoattack here
+        # Only end turn on movement actions
+        if not action.ends_turn:
+            return False
+
+        if not self.engine.player.acted:
+            self.engine.player.shoot(self.engine.target)
         self.engine.handle_enemy_turns()
+        self.engine.player.acted = False
 
         self.engine.update_fov()
         return True

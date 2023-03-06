@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, Union
 import copy
 import math
+import random
 
 from render_order import RenderOrder
 
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
     from components.equipment import Equipment
     from components.equippable import Equippable
     from components.fighter import Fighter
+    from components.firearm import Firearm
     from components.inventory import Inventory
     from components.level import Level
     from game_map import GameMap
@@ -124,10 +126,45 @@ class Actor(Entity):
         self.level = level
         self.level.parent = self
 
+        self.acted = False
+
     @property
     def is_alive(self) -> bool:
         """Returns True as long as this actor can perform actions."""
         return bool(self.ai)
+
+    def shoot(self, target: Union[Actor, None]) -> None:
+        if (
+            not self.equipment
+            or not self.equipment.weapon
+            or not self.equipment.weapon.firearm
+        ):
+            return
+        firearm = self.equipment.weapon.firearm
+        if not target or not firearm.can_shoot():
+            firearm.skip_turn()
+            return
+
+        damage = 0
+        shots_fired = 0
+        while shots_fired < firearm.burst and firearm.ammo > 0:
+            # TODO implement some form of accuracy statting
+            if random.randint(0, 3):
+                hit = True
+                damage += random.randint(firearm.damage // 2, firearm.damage)
+            firearm.ammo -= 1
+            if firearm.cooldown:
+                firearm.cooldown.remaining = firearm.cooldown.length
+            shots_fired += 1
+
+        if damage > 0:
+            self.gamemap.engine.message_log.add_message(
+                f"{self.name} shoots the {target.name}!"
+            )
+            # Apply damage after message so target isn't dead when the message generates
+            target.fighter.hp -= damage
+        else:
+            self.gamemap.engine.message_log.add_message(f"{self.name} misses!")
 
 
 class Item(Entity):
@@ -141,6 +178,7 @@ class Item(Entity):
         name: str = "<Unnamed>",
         consumable: Optional[Consumable] = None,
         equippable: Optional[Equippable] = None,
+        firearm: Optional[Firearm] = None,
     ):
         super().__init__(
             x=x,
@@ -161,3 +199,8 @@ class Item(Entity):
 
         if self.equippable:
             self.equippable.parent = self
+
+        self.firearm = firearm
+
+        if self.firearm:
+            self.firearm.parent = self

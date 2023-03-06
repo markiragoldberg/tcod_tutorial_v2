@@ -37,6 +37,7 @@ class Engine:
                     entity.ai.perform()
                 except exceptions.Impossible:
                     pass  # Ignore impossible action exceptions from AI.
+                entity.acted = False
 
     def update_fov(self) -> None:
         """Recompute the visible area based on the players point of view."""

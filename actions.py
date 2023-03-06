@@ -1,19 +1,22 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 import color
 import exceptions
 
 if TYPE_CHECKING:
+    from typing import Optional, Tuple
+
     from engine import Engine
     from entity import Actor, Entity, Item
 
 
 class Action:
-    def __init__(self, entity: Actor) -> None:
+    def __init__(self, entity: Actor, ends_turn: bool = False) -> None:
         super().__init__()
         self.entity = entity
+        self.ends_turn = ends_turn
 
     @property
     def engine(self) -> Engine:
@@ -46,20 +49,28 @@ class PickupAction(Action):
         for item in self.engine.game_map.items:
             if actor_location_x == item.x and actor_location_y == item.y:
                 if len(inventory.items) >= inventory.capacity:
-                    raise exceptions.Impossible("Your inventory is full.")
+                    self.engine.message_log.add_message("Your inventory is full.")
 
+                # TODO if duplicate firearm reload the existing weapon rather than get two
                 self.engine.game_map.entities.remove(item)
                 item.parent = self.entity.inventory
                 inventory.items.append(item)
 
-                self.engine.message_log.add_message(f"You picked up the {item.name}!")
+                # Auto-equip new weapons (and don't shoot that turn)
+                if item.firearm:
+                    EquipAction(self.entity, item).perform()
+                    self.engine.message_log.add_message(
+                        f"You pick up and ready the {item.name}."
+                    )
+                else:
+                    self.engine.message_log.add_message(f"You pick up the {item.name}.")
                 return
-
-        raise exceptions.Impossible("There is nothing here to pick up.")
 
 
 class ItemAction(Action):
-    def __init__(self, entity: Actor, item: Item, target_xy: Optional[Tuple[int, int]] = None):
+    def __init__(
+        self, entity: Actor, item: Item, target_xy: Optional[Tuple[int, int]] = None
+    ):
         super().__init__(entity)
         self.item = item
         if not target_xy:
@@ -101,20 +112,27 @@ class WaitAction(Action):
 
 
 class TakeStairsAction(Action):
+    def __init__(self, entity: Actor):
+        super().__init__(entity, True)
+
     def perform(self) -> None:
         """
         Take the stairs, if any exist at the entity's location.
         """
         if (self.entity.x, self.entity.y) == self.engine.game_map.downstairs_location:
             self.engine.game_world.generate_floor()
-            self.engine.message_log.add_message("You descend the staircase.", color.descend)
+            self.engine.message_log.add_message(
+                "You descend the staircase.", color.descend
+            )
+            # Don't autoshoot after descending stairs
+            self.engine.player.acted = True
         else:
             raise exceptions.Impossible("There are no stairs here.")
 
 
 class ActionWithDirection(Action):
-    def __init__(self, entity: Actor, dx: int, dy: int):
-        super().__init__(entity)
+    def __init__(self, entity: Actor, dx: int, dy: int, ends_turn: bool = False):
+        super().__init__(entity, ends_turn)
 
         self.dx = dx
         self.dy = dy
@@ -139,11 +157,15 @@ class ActionWithDirection(Action):
 
 
 class MeleeAction(ActionWithDirection):
+    def __init__(self, entity: Actor, dx: int, dy: int):
+        super().__init__(entity, dx, dy, True)
+
     def perform(self) -> None:
         target = self.target_actor
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
 
+        self.entity.acted = True
         damage = self.entity.fighter.power - target.fighter.defense
 
         attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
@@ -153,13 +175,20 @@ class MeleeAction(ActionWithDirection):
             attack_color = color.enemy_atk
 
         if damage > 0:
-            self.engine.message_log.add_message(f"{attack_desc} for {damage} hit points.", attack_color)
+            self.engine.message_log.add_message(
+                f"{attack_desc} for {damage} hit points.", attack_color
+            )
             target.fighter.hp -= damage
         else:
-            self.engine.message_log.add_message(f"{attack_desc} but does no damage.", attack_color)
+            self.engine.message_log.add_message(
+                f"{attack_desc} but does no damage.", attack_color
+            )
 
 
 class MovementAction(ActionWithDirection):
+    def __init__(self, entity: Actor, dx: int, dy: int):
+        super().__init__(entity, dx, dy, True)
+
     def perform(self) -> None:
         dest_x, dest_y = self.dest_xy
 
@@ -174,9 +203,14 @@ class MovementAction(ActionWithDirection):
             raise exceptions.Impossible("That way is blocked.")
 
         self.entity.move(self.dx, self.dy)
+        if self.entity == self.engine.player:
+            PickupAction(self.entity).perform()
 
 
 class BumpAction(ActionWithDirection):
+    def __init__(self, entity: Actor, dx: int, dy: int):
+        super().__init__(entity, dx, dy, True)
+
     def perform(self) -> None:
         if self.target_actor:
             return MeleeAction(self.entity, self.dx, self.dy).perform()

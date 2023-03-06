@@ -1,4 +1,4 @@
-from components import consumable, equippable
+from components import consumable, equippable, firearm
 from components.ai import HostileEnemy
 from components.equipment import Equipment
 from components.fighter import Fighter
@@ -63,7 +63,9 @@ lightning_scroll = Item(
     consumable=consumable.LightningDamageConsumable(damage=20, maximum_range=5),
 )
 
-dagger = Item(char="/", color=(0, 191, 255), name="Dagger", equippable=equippable.Dagger())
+dagger = Item(
+    char="/", color=(0, 191, 255), name="Dagger", equippable=equippable.Dagger()
+)
 
 sword = Item(char="/", color=(0, 191, 255), name="Sword", equippable=equippable.Sword())
 
@@ -74,4 +76,30 @@ leather_armor = Item(
     equippable=equippable.LeatherArmor(),
 )
 
-chain_mail = Item(char="[", color=(139, 69, 19), name="Chain Mail", equippable=equippable.ChainMail())
+chain_mail = Item(
+    char="[", color=(139, 69, 19), name="Chain Mail", equippable=equippable.ChainMail()
+)
+
+shotgun = Item(
+    char="/",
+    color=(192, 192, 160),
+    name="Shotgun",
+    equippable=equippable.Gun(),
+    firearm=firearm.Shotgun(),
+)
+
+chaingun = Item(
+    char="{",
+    color=(192, 192, 224),
+    name="Chaingun",
+    equippable=equippable.Gun(),
+    firearm=firearm.Chaingun(),
+)
+
+rocketlauncher = Item(
+    char="%",
+    color=(224, 160, 160),
+    name="Rocket launcher",
+    equippable=equippable.Gun(),
+    firearm=firearm.RocketLauncher(),
+)
