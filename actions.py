@@ -107,6 +107,9 @@ class EquipAction(Action):
 
 
 class WaitAction(Action):
+    def __init__(self, entity: Actor):
+        super().__init__(entity, True)
+
     def perform(self) -> None:
         pass
 
